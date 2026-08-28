@@ -17,6 +17,7 @@ for p in (os.path.join(BASE, "..", "config.json"), os.path.join(BASE, "config.js
 PORT = int(CONF.get("port", 8770))
 TITLE = CONF.get("paper_title", "続報と雑談")
 TAGLINE = CONF.get("tagline", "あなた専用・不定期刊")
+KINDS_MAP = CONF.get("kinds", {"雑談":"zatsudan","続報":"zokuho","号外":"gogai","セール":"sale","庭":"niwa","趨勢":"trend"})
 
 
 def load_feed():
@@ -67,7 +68,7 @@ PAGE = """<!doctype html>
 <div class="wrap" id="feed"></div>
 <footer>掲載基準: 未知・いま動いた・刺さる ／ 迷ったら黙る</footer>
 <script>
-const KINDS = {"雑談":"zatsudan","続報":"zokuho","号外":"gogai","セール":"sale","庭":"niwa","趨勢":"trend"};
+const KINDS = __KINDS__;
 
 function el(tag, cls, text){
   const e = document.createElement(tag);
@@ -137,7 +138,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path in ("/", "/index.html"):
-            return self._send(200, PAGE.replace("__TITLE__", TITLE).replace("__TAGLINE__", TAGLINE), "text/html; charset=utf-8")
+            return self._send(200, PAGE.replace("__TITLE__", TITLE).replace("__TAGLINE__", TAGLINE).replace("__KINDS__", json.dumps(KINDS_MAP, ensure_ascii=False)), "text/html; charset=utf-8")
         if self.path == "/feed.json":
             return self._send(200, json.dumps(load_feed(), ensure_ascii=False))
         return self._send(404, "{}")

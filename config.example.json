@@ -2,6 +2,15 @@
   "port": 8770,
   "paper_title": "続報と雑談",
   "tagline": "あなた専用・不定期刊",
-  "ad_feed_url": "https://raw.githubusercontent.com/daiokawa/zokuhou-ads/main/adfeed.json",
-  "publisher_note": "広告主・掲載希望は adfeed リポジトリ参照"
+  "lang": "ja",
+  "kinds": {
+    "続報": "zokuho",
+    "雑談": "zatsudan",
+    "趨勢": "trend",
+    "号外": "gogai",
+    "セール": "sale",
+    "庭": "niwa"
+  },
+  "ad_feed_url": "",
+  "_comment": "英語紙面の例: paper_title='Meanwhile', kinds={'Follow-up':'zokuho','Chat':'zatsudan','Trends':'trend','Breaking':'gogai','Deals':'sale','Garden':'niwa'}"
 }

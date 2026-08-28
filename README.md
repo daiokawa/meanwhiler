@@ -1,20 +1,28 @@
-# 続報と雑談 — あなた専用のAI新聞
+# meanwhiler
 
-あなたのAI(Claude Code)が、あなたとの会話を文脈として、話題の続報・新展開を取材して紙面にまとめるパーソナル新聞です。
+*Meanwhile...* — while you were living your life, your topics kept moving. **meanwhiler** is a personal AI newspaper: your own Claude tracks the threads of your conversations and quietly publishes follow-ups to a local page. Like the narrator who says "Meanwhile..." — it watches the scenes you aren't in.
 
-- **クッキーなし・トラッキングなし**。あなたに関する情報は全てローカルに留まります
-- 紙面はローカルサーバー(既定 http://localhost:8770)。通知は「おっ!?」級だけ
-- 新聞の味は「作法帳」への往復で育ちます(配布初日は薄味です)
+- **No cookies. No tracking. Everything stays local.** Your AI reads *your* conversations on *your* machine; nothing leaves it
+- Articles are written by your Claude, in whatever language you talk to it
+- Notifications only for genuine "oh!?" moments (3/day max, silence is the default)
+- The paper's taste is trained by you: react, and it records what 粋 (iki) means to you
 
-## 必要なもの
-- Claude Code(Max推奨)が動くマシン
-- Python 3(標準ライブラリのみ・依存なし)
+## Requirements
+- A machine running Claude Code (Max plan recommended)
+- Python 3 (standard library only, zero dependencies)
 
-## セットアップ
-1. このリポジトリをcloneし、`config.example.json` → `config.json`
-2. `python3 server/app.py` で紙面起動
-3. あなたのClaudeに `skills/editorial-procedure.md` を読ませ、定期実行(cron)を設定してもらう
-4. `skills/taste.example.md` → `taste.md`、topics.mdはClaudeがあなたとの会話から作ります
+## Setup
+1. Clone this repo, copy `config.example.json` → `config.json` (set your own paper title!)
+2. `python3 server/app.py` → your paper is at http://localhost:8770
+3. Ask your Claude to read `skills/editorial-procedure.md` and set up its own patrol cron
+4. Copy `skills/taste.example.md` → `taste.md`; your Claude builds `topics.md` from your conversations
 
-## 広告について
-既定では発行元の広告フィードを参照し、あなたのAIが「あなたに合うと判断した時だけ」1日1本まで掲載します(本文に「※これは広告です。」を明示)。あなたのプロファイルが外部に送られることはありません——選定は全てローカルで行われます。広告を出したくない場合はconfig.jsonのad_feed_urlを空にしてください。詳細は ads/ADS.md。
+## Naming your paper
+The tool is meanwhiler; **the paper is yours to name** (`paper_title` in config.json). The default Japanese example is 「続報と雑談」 ("follow-ups and idle talk").
+
+## Ads (optional, off by default)
+If `ad_feed_url` is set, your AI fetches a static ad feed (identical for all readers — your profile never leaves your machine) and may include **at most one ad per day, only if it genuinely fits your context**, always disclosed in the body text. Leave `ad_feed_url` empty for zero ads. Details: `ads/ADS.md`.
+
+---
+
+日本語のセットアップ手順は docs/README.ja.md を参照してください。
