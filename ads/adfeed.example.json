@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "updated": "2026-08-28",
+  "ads": [
+    {
+      "id": "ana-oka-202609",
+      "category": "travel",
+      "hook": "羽田→那覇、9月中旬の平日が片道7,980円",
+      "body": "9/16-18の平日便が最安帯。セール終了は9/1 23:59。",
+      "url": "https://example.com/sale?aff=OKAWA_ID&sub={install_id}",
+      "expires": "2026-09-01",
+      "hints": ["旅行", "沖縄", "国内線", "セール"]
+    }
+  ]
+}
