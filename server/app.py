@@ -15,6 +15,7 @@ for p in (os.path.join(BASE, "..", "config.json"), os.path.join(BASE, "config.js
             CONF = json.load(f)
         break
 PORT = int(CONF.get("port", 8770))
+HOST = CONF.get("host", "127.0.0.1")
 TITLE = CONF.get("paper_title", "続報と雑談")
 TAGLINE = CONF.get("tagline", "あなた専用・不定期刊")
 KINDS_MAP = CONF.get("kinds", {"雑談":"zatsudan","続報":"zokuho","号外":"gogai","セール":"sale","庭":"niwa","趨勢":"trend"})
@@ -145,5 +146,5 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"Claude says: http://localhost:{PORT}")
-    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+    print(f"meanwhiler: http://{HOST}:{PORT}")
+    ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
