@@ -1,0 +1,5 @@
+# 会話由来の生成物・個人設定はコミットしない(小坂井Claudeの提案・2026-08-30)
+config.json
+server/feed.jsonl
+skills/taste.md
+topics.md
