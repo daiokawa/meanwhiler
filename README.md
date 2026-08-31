@@ -10,6 +10,7 @@
 ## Requirements
 - A machine running Claude Code (Max plan recommended)
 - Python 3 (standard library only, zero dependencies)
+- Works on macOS, Linux, and Windows (via the Git Bash environment that ships with Claude Code; `post.sh` auto-detects `python3`/`python`). Desktop notifications are OS-specific — ask your Claude to pick a mechanism for your OS (macOS: terminal-notifier, Windows: PowerShell toast, Linux: notify-send)
 
 ## Setup
 1. Clone this repo, copy `config.example.json` → `config.json` (set your own paper title!)
