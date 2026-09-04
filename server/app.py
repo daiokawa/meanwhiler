@@ -18,6 +18,8 @@ PORT = int(CONF.get("port", 8770))
 HOST = CONF.get("host", "127.0.0.1")
 TITLE = CONF.get("paper_title", "続報と雑談")
 TAGLINE = CONF.get("tagline", "あなた専用・不定期刊")
+SRC_LABEL = CONF.get("source_label", "出典")
+FOOTER = CONF.get("footer", "掲載基準: 未知・いま動いた・刺さる ／ 迷ったら黙る")
 KINDS_MAP = CONF.get("kinds", {"雑談":"zatsudan","続報":"zokuho","号外":"gogai","セール":"sale","庭":"niwa","趨勢":"trend"})
 
 
@@ -67,7 +69,7 @@ PAGE = """<!doctype html>
 <body>
 <header><h1>__TITLE__</h1><div class="tagline">__TAGLINE__</div></header>
 <div class="wrap" id="feed"></div>
-<footer>掲載基準: 未知・いま動いた・刺さる ／ 迷ったら黙る</footer>
+<footer>__FOOTER__</footer>
 <script>
 const KINDS = __KINDS__;
 
@@ -97,7 +99,7 @@ function buildArticle(it, lastSeen){
     {
       const sd = el("div","sources");
       srcs.forEach((sv,i)=>{
-        const a = el("a","", "出典"+(i+1));
+        const a = el("a","", "__SRC__"+(i+1));
         try{ const u = new URL(sv); if(u.protocol==="https:"||u.protocol==="http:") a.href = u.href; }catch(e){}
         a.target="_blank"; a.rel="noopener";
         sd.appendChild(a);
@@ -139,7 +141,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path in ("/", "/index.html"):
-            return self._send(200, PAGE.replace("__TITLE__", TITLE).replace("__TAGLINE__", TAGLINE).replace("__KINDS__", json.dumps(KINDS_MAP, ensure_ascii=False)), "text/html; charset=utf-8")
+            return self._send(200, PAGE.replace("__TITLE__", TITLE).replace("__TAGLINE__", TAGLINE).replace("__KINDS__", json.dumps(KINDS_MAP, ensure_ascii=False)).replace("__SRC__", SRC_LABEL).replace("__FOOTER__", FOOTER), "text/html; charset=utf-8")
         if self.path == "/feed.json":
             return self._send(200, json.dumps(load_feed(), ensure_ascii=False))
         return self._send(404, "{}")

@@ -1,5 +1,7 @@
 # meanwhiler
 
+![meanwhiler — a personal newspaper written by your own AI](assets/screenshot.png)
+
 *Meanwhile...* — while you were living your life, your topics kept moving. **meanwhiler** is a personal AI newspaper: your own Claude tracks the threads of your conversations and quietly publishes follow-ups to a local page. Like the narrator who says "Meanwhile..." — it watches the scenes you aren't in.
 
 - **No cookies. No tracking. Everything stays local.** Your AI reads *your* conversations on *your* machine; nothing leaves it
