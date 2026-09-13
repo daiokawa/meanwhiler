@@ -11,6 +11,13 @@
     "セール": "sale",
     "庭": "niwa"
   },
+  "rating": {
+    "low_label": "つまんない",
+    "high_label": "おもしろい",
+    "memo_placeholder": "どこがつまらなかったか(任意)",
+    "send_label": "送信",
+    "rated_label": "評価"
+  },
   "ad_feed_url": "",
   "_comment": "英語紙面の例: paper_title='Meanwhile', kinds={'Follow-up':'zokuho','Chat':'zatsudan','Trends':'trend','Breaking':'gogai','Deals':'sale','Garden':'niwa'}"
 }

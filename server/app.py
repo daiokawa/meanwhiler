@@ -2,12 +2,15 @@
 # Claude says 新聞 - 雑談/号外/セールの専用紙面
 # what: feed.jsonl を新聞風ページで配信する最小サーバー(標準ライブラリのみ)
 # why : チャット履歴は流れて探しにくい。新着が一目で分かる置き場を分離する
+import datetime
 import json
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 FEED = os.path.join(BASE, "feed.jsonl")
+RATINGS = os.path.join(BASE, "ratings.jsonl")
+MEMO_MAX = 200
 CONF = {}
 for p in (os.path.join(BASE, "..", "config.json"), os.path.join(BASE, "config.json")):
     if os.path.isfile(p):
@@ -21,6 +24,27 @@ TAGLINE = CONF.get("tagline", "あなた専用・不定期刊")
 SRC_LABEL = CONF.get("source_label", "出典")
 FOOTER = CONF.get("footer", "掲載基準: 未知・いま動いた・刺さる ／ 迷ったら黙る")
 KINDS_MAP = CONF.get("kinds", {"雑談":"zatsudan","続報":"zokuho","号外":"gogai","セール":"sale","庭":"niwa","趨勢":"trend"})
+# 1〜10の評価UIの文言(config.jsonのratingで差し替え可)
+RATE = CONF.get("rating", {})
+R_LO = RATE.get("low_label", "つまんない")
+R_HI = RATE.get("high_label", "おもしろい")
+R_PH = RATE.get("memo_placeholder", "どこがつまらなかったか(任意)")
+R_SEND = RATE.get("send_label", "送信")
+R_DONE = RATE.get("rated_label", "評価")
+
+
+def load_ratings():
+    # what: ratings.jsonl を ts -> {score, memo} に畳む(同じtsは後から書いた方が勝ち)
+    out = {}
+    if os.path.isfile(RATINGS):
+        with open(RATINGS, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                    out[r["ts"]] = {"score": r.get("score"), "memo": r.get("memo", "")}
+                except Exception:
+                    pass
+    return out
 
 
 def load_feed():
@@ -33,7 +57,14 @@ def load_feed():
                 except Exception:
                     pass
     items.reverse()  # 新しい順
-    return items[:120]  # 紙面は最新40本まで(過去分もfeed.jsonlには全部残る)
+    items = items[:120]  # 紙面は最新120本まで(過去分もfeed.jsonlには全部残る)
+    rated = load_ratings()
+    for it in items:
+        r = rated.get(it.get("ts"))
+        if r:
+            it["score"] = r["score"]
+            it["memo"] = r["memo"]
+    return items
 
 
 PAGE = """<!doctype html>
@@ -65,6 +96,24 @@ PAGE = """<!doctype html>
   .sources a { color:#8a857b; margin-right:12px; }
   .empty { text-align:center; color:#8a857b; padding:60px 0; }
   footer { text-align:center; color:#b5b0a6; font-size:11px; padding:20px; }
+  .rate { margin-top:14px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .rate .cap { font-size:11px; color:#b5b0a6; letter-spacing:1px; }
+  .rate .btns { display:flex; gap:3px; }
+  .rate button { width:27px; height:27px; padding:0; cursor:pointer; font-size:12px;
+                 border:1px solid var(--line); background:#fff; color:#8a857b; border-radius:3px;
+                 font-family:inherit; }
+  .rate button:hover { border-color:#a8a29a; color:var(--ink); }
+  .rate button.on { color:#fff; font-weight:700; border-color:transparent; }
+  .rate button.on.lo { background:var(--red); }
+  .rate button.on.mid { background:#8a857b; }
+  .rate button.on.hi { background:var(--blue); }
+  .rate button.on.top { background:var(--green); }
+  .memo { margin-top:8px; display:flex; gap:6px; }
+  .memo input { flex:1; font-family:inherit; font-size:13px; padding:6px 9px;
+                border:1px solid var(--line); border-radius:3px; background:#fff; color:var(--ink); }
+  .memo button { width:auto; padding:0 12px; height:auto; }
+  .done { font-size:11px; color:#8a857b; cursor:pointer; }
+  .done .m { color:#b5b0a6; }
 </style></head>
 <body>
 <header><h1>__TITLE__</h1><div class="tagline">__TAGLINE__</div></header>
@@ -107,10 +156,91 @@ function buildArticle(it, lastSeen){
       art.appendChild(sd);
     }
   }
+  art.appendChild(buildRating(it));
   return art;
 }
 
+function band(n){ return n<=3 ? "lo" : n<=5 ? "mid" : n<=7 ? "hi" : "top"; }
+
+// what: 1〜10の評価UI。5点以下だけ「ひとこと」欄が開く
+// why : 点数だけでは"なぜ刺さらなかったか"が残らない。理由が要るのは失敗のときだけ
+function buildRating(it){
+  const holder = el("div");
+
+  function showDone(score, memo){
+    const d = el("div","done","__DONE__ " + score + "/10");
+    if(memo) d.appendChild(el("span","m","  " + memo));
+    d.onclick = ()=> showPicker(score);
+    holder.replaceChildren(d);
+  }
+
+  function showPicker(current){
+    holder.replaceChildren();
+    const box = el("div","rate");
+    box.appendChild(el("span","cap","__LO__"));
+    const btns = el("div","btns");
+    const memoWrap = el("div","memo");
+    memoWrap.style.display = "none";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.maxLength = 200;
+    input.placeholder = "__MEMOPH__";
+    const send = el("button","","__SEND__");
+    memoWrap.appendChild(input);
+    memoWrap.appendChild(send);
+    let picked = current || 0;
+
+    function paint(){
+      [...btns.children].forEach((b,i)=>{
+        b.className = (i+1)===picked ? "on " + band(picked) : "";
+      });
+    }
+
+    async function submit(score, memo){
+      try{
+        await fetch("/rate", {method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ts: it.ts, score: score, memo: memo || ""})});
+        it.score = score; it.memo = memo || "";
+        showDone(score, memo || "");
+      }catch(e){ send.textContent = "!"; }
+    }
+
+    for(let n=1; n<=10; n++){
+      const b = el("button","", String(n));
+      b.onclick = ()=>{
+        picked = n; paint();
+        if(n<=5){ memoWrap.style.display = "flex"; input.focus(); }
+        else { submit(n, ""); }
+      };
+      btns.appendChild(b);
+    }
+    send.onclick = ()=> submit(picked, input.value.trim());
+
+    // IME: 変換確定のEnterで送信しない。compositionendがkeydownより先に来る環境が
+    // あるため、isComposing/keyCode229に加えて確定直後の猶予も見る
+    let imeEnd = 0;
+    input.addEventListener("compositionend", ()=>{ imeEnd = Date.now(); });
+    input.addEventListener("keydown", (e)=>{
+      if(e.key !== "Enter") return;
+      if(e.isComposing || e.keyCode === 229) return;
+      if(Date.now() - imeEnd < 300) return;
+      e.preventDefault(); send.click();
+    });
+
+    box.appendChild(btns);
+    box.appendChild(el("span","cap","__HI__"));
+    paint();
+    holder.appendChild(box);
+    holder.appendChild(memoWrap);
+  }
+
+  if(it.score) showDone(it.score, it.memo || ""); else showPicker(0);
+  return holder;
+}
+
 async function render(){
+  // 入力中の再描画はメモを消してしまうので見送る
+  if(document.activeElement && document.activeElement.tagName === "INPUT") return;
   const items = await (await fetch("/feed.json")).json();
   const lastSeen = localStorage.getItem("lastSeen") || "";
   const feed = document.getElementById("feed");
@@ -141,10 +271,41 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path in ("/", "/index.html"):
-            return self._send(200, PAGE.replace("__TITLE__", TITLE).replace("__TAGLINE__", TAGLINE).replace("__KINDS__", json.dumps(KINDS_MAP, ensure_ascii=False)).replace("__SRC__", SRC_LABEL).replace("__FOOTER__", FOOTER), "text/html; charset=utf-8")
+            page = (PAGE.replace("__TITLE__", TITLE).replace("__TAGLINE__", TAGLINE)
+                    .replace("__KINDS__", json.dumps(KINDS_MAP, ensure_ascii=False))
+                    .replace("__SRC__", SRC_LABEL).replace("__FOOTER__", FOOTER)
+                    .replace("__LO__", R_LO).replace("__HI__", R_HI)
+                    .replace("__MEMOPH__", R_PH).replace("__SEND__", R_SEND)
+                    .replace("__DONE__", R_DONE))
+            return self._send(200, page, "text/html; charset=utf-8")
         if self.path == "/feed.json":
             return self._send(200, json.dumps(load_feed(), ensure_ascii=False))
         return self._send(404, "{}")
+
+    def do_POST(self):
+        if self.path != "/rate":
+            return self._send(404, "{}")
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            if n <= 0 or n > 4096:
+                raise ValueError("bad length")
+            req = json.loads(self.rfile.read(n))
+            ts = str(req["ts"])[:32]
+            score = int(req["score"])
+            if not 1 <= score <= 10:
+                raise ValueError("score out of range")
+            memo = str(req.get("memo") or "").replace("\n", " ")[:MEMO_MAX]
+        except Exception:
+            return self._send(400, json.dumps({"ok": False}))
+        entry = {
+            "ts": ts,
+            "score": score,
+            "memo": memo,
+            "rated_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        }
+        with open(RATINGS, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        return self._send(200, json.dumps({"ok": True}))
 
 
 if __name__ == "__main__":
