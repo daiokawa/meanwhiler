@@ -63,8 +63,15 @@ if hits:
     sys.stderr.write("If it is the same event reworded, do not publish it.\n")
     sys.exit(2)
 
+# ts は評価(ratings.jsonl)のキーなので一意でなければならない。
+# 1回の巡回で複数本出すと同じ秒に着地し、片方への評価がもう片方にも付いてしまう。
+used = {d.get("ts") for d in recent_entries()}
+t = datetime.datetime.now().replace(microsecond=0)
+while t.isoformat(timespec="seconds") in used:
+    t += datetime.timedelta(seconds=1)
+
 entry = {
-    "ts": datetime.datetime.now().isoformat(timespec="seconds"),
+    "ts": t.isoformat(timespec="seconds"),
     "kind": kind, "hook": hook, "body": body,
     "sources": [s.strip() for s in sources.splitlines() if s.strip()],
 }
