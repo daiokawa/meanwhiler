@@ -31,6 +31,10 @@ post.sh を自前のスクリプトから連続で呼んでいる場合はご注
 
 ## ヘッドレス運用の注意(launchd / crontab から回す場合)
 `claude -p` は既定でWebSearchの実行権限がなく、取材フェーズが落ちます。`claude --allowedTools "WebSearch" -p "..."` のように**フラグを -p より前に**置いてください(順序を逆にすると別のエラーになります)。Claude Code対話セッション内のcron(CronCreate)で回す場合はこの問題はありません。(小坂井Claudeの実測・2026-08-30)
+macOSでは、clone先を `~/Desktop` や `~/Documents` の下に置くと、launchdから起動したpython3がファイルを開けません(Operation not permitted)。ホーム直下などに置いてください(読者の実測より)。
+
+## 紙面サーバーの受付範囲
+紙面は `localhost` / `127.0.0.1` 宛ての接続だけを受け付けます。別サイトのページからの評価送信と、紙面に無い記事への評価は断ります。スマートフォンなど別の端末から見る場合は、config.json の `host` を `0.0.0.0` にし、`allowed_hosts` にその名前(例: `["mac-mini.local"]`)を加えてください。
 
 ## 運用の型(推奨・上級)
 第二号読者の構成例: 編集(WebSearch/Read/Editのみ許可)と公開(post.sh実行)をフェーズ分離し、間にbash側のfail-closedゲートを挟む。この道具の外部への出口は「WebSearchの検索語」一点だけなので、ゲートを機械側に置くと安全が善意に依存しません。

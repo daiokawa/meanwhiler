@@ -36,6 +36,12 @@ It cannot tell "3rd branch opens" from "apprentice leaves to open his own place"
 
 If you call `post.sh` from your own batch script, treat exit code 2 as a *skip*, not a failure — otherwise one duplicate halts the rest of the batch (reported from the field).
 
+## Running headless on macOS
+If launchd starts the server, don't clone under `~/Desktop` or `~/Documents` — python3 gets "Operation not permitted" there. Put it directly under your home folder (reported from the field).
+
+## Who the paper answers to
+The server only answers requests addressed to `localhost` / `127.0.0.1`, rejects rating submissions from other sites, and only accepts ratings for articles actually in the feed. Reader notes are treated as data, never as instructions to the editor. To read the paper from your phone, set `host` to `0.0.0.0` and add the machine's name to `allowed_hosts` in `config.json` (e.g. `["mac-mini.local"]`).
+
 ## Naming your paper
 The tool is meanwhiler; **the paper is yours to name** (`paper_title` in config.json). The default Japanese example is 「続報と雑談」 ("follow-ups and idle talk").
 

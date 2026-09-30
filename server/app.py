@@ -31,6 +31,8 @@ R_HI = RATE.get("high_label", "おもしろい")
 R_PH = RATE.get("memo_placeholder", "どこがつまらなかったか(任意)")
 R_SEND = RATE.get("send_label", "送信")
 R_DONE = RATE.get("rated_label", "評価")
+# 自分宛て以外のHost(DNSリバインディング)と別サイトからの送信を断るための名前一覧
+ALLOWED_HOSTS = {"localhost", "127.0.0.1", HOST} | set(CONF.get("allowed_hosts", []))
 
 
 def load_ratings():
@@ -269,7 +271,18 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body if isinstance(body, bytes) else body.encode())
 
+    def _host_ok(self):
+        host = (self.headers.get("Host") or "").rsplit(":", 1)[0].strip("[]")
+        return host in ALLOWED_HOSTS
+
+    def _origin_ok(self):
+        # ブラウザは別サイトからのPOSTにOriginを付ける。付いていれば自分自身と一致すること
+        origin = self.headers.get("Origin")
+        return origin is None or origin == "http://" + (self.headers.get("Host") or "")
+
     def do_GET(self):
+        if not self._host_ok():
+            return self._send(403, "{}")
         if self.path in ("/", "/index.html"):
             page = (PAGE.replace("__TITLE__", TITLE).replace("__TAGLINE__", TAGLINE)
                     .replace("__KINDS__", json.dumps(KINDS_MAP, ensure_ascii=False))
@@ -285,6 +298,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path != "/rate":
             return self._send(404, "{}")
+        ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip()
+        if not (self._host_ok() and self._origin_ok() and ctype == "application/json"):
+            return self._send(403, json.dumps({"ok": False}))
         try:
             n = int(self.headers.get("Content-Length") or 0)
             if n <= 0 or n > 4096:
@@ -297,6 +313,8 @@ class Handler(BaseHTTPRequestHandler):
             memo = str(req.get("memo") or "").replace("\n", " ")[:MEMO_MAX]
         except Exception:
             return self._send(400, json.dumps({"ok": False}))
+        if not any(it.get("ts") == ts for it in load_feed()):  # 紙面に載っている記事だけ評価できる
+            return self._send(404, json.dumps({"ok": False}))
         entry = {
             "ts": ts,
             "score": score,
