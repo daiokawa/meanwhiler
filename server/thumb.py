@@ -87,9 +87,9 @@ def _ext(data):
 
 
 def fetch(sources, ts):
-    """最初に画像が取れた出典の og:image を保存し、ファイル名を返す。取れなければ None"""
+    """最初に画像が取れた出典の og:image を保存し、(ファイル名, その出典URL) を返す。取れなければ (None, None)"""
     if not enabled():
-        return None
+        return None, None
     for src in sources[:3]:
         try:
             page, final = _get(src, MAX_PAGE)
@@ -109,10 +109,10 @@ def fetch(sources, ts):
             name = ts.replace(":", "-") + ext
             with open(os.path.join(IMG_DIR, name), "wb") as f:
                 f.write(data)
-            return name
+            return name, src
         except Exception:
             continue
-    return None
+    return None, None
 
 
 if __name__ == "__main__":

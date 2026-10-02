@@ -97,9 +97,13 @@ PAGE = """<!doctype html>
   .badge.trend { background:#f1f0ee; color:#57534e; border:1px solid #d6d3ce; }
   .new { background:var(--red); color:#fff; font-size:10px; padding:2px 7px; border-radius:3px; font-weight:700; }
   h2 { font-size:19px; margin:10px 0 8px; line-height:1.5; }
-  .body { font-size:15px; line-height:1.9; }
-  .photo { display:block; width:100%; max-height:340px; object-fit:cover; margin:4px 0 12px;
+  .body { font-size:15px; line-height:1.9; display:flow-root; }
+  /* 紙面風: 写真は右上、本文が左に回り込む。狭い画面では上に全幅 */
+  .photo { float:right; width:44%; margin:6px 0 10px 20px;
            border:1px solid var(--line); filter:saturate(0.85); }
+  @media (max-width:600px) {
+    .photo { float:none; display:block; width:100%; max-height:260px; object-fit:cover; margin:4px 0 12px; }
+  }
   .sources { margin-top:10px; font-size:12px; }
   .sources a { color:#8a857b; margin-right:12px; }
   .empty { text-align:center; color:#8a857b; padding:60px 0; }
@@ -145,14 +149,24 @@ function buildArticle(it, lastSeen){
   if(String(it.ts||"") > lastSeen) meta.appendChild(el("span","new","NEW"));
   art.appendChild(meta);
   art.appendChild(el("h2","", it.hook||""));
+  const body = el("div","body");
   if(it.image){
     const img = document.createElement("img");
     img.className = "photo"; img.loading = "lazy"; img.alt = "";
     img.src = "/img/" + encodeURIComponent(it.image);
-    img.onerror = ()=> img.remove();
-    art.appendChild(img);
+    // 写真は取得元の出典ページへのリンクにする(http/httpsのみ)
+    let holder = img;
+    try{
+      const u = new URL(it.image_src || (it.sources||[])[0]);
+      if(u.protocol==="https:"||u.protocol==="http:"){
+        holder = el("a","photo-link"); holder.href = u.href;
+        holder.target = "_blank"; holder.rel = "noopener noreferrer";
+        holder.appendChild(img);
+      }
+    }catch(e){}
+    img.onerror = ()=> holder.remove();
+    body.appendChild(holder);
   }
-  const body = el("div","body");
   String(it.body||"").split(String.fromCharCode(10)).forEach((p,i,arr)=>{
     body.appendChild(document.createTextNode(p));
     if(i < arr.length-1) body.appendChild(document.createElement("br"));

@@ -78,9 +78,10 @@ entry = {
 try:  # 写真は飾り。取れなくても掲載は止めない
     sys.path.insert(0, os.environ["FEED_DIR"])
     import thumb
-    image = thumb.fetch(entry["sources"], entry["ts"])
+    image, image_src = thumb.fetch(entry["sources"], entry["ts"])
     if image:
         entry["image"] = image
+        entry["image_src"] = image_src  # 写真を押すとこの出典へ飛ぶ
 except Exception:
     pass
 with open(path, "a", encoding="utf-8") as f:
