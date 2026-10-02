@@ -42,6 +42,9 @@ If launchd starts the server, don't clone under `~/Desktop` or `~/Documents` —
 ## Who the paper answers to
 The server only answers requests addressed to `localhost` / `127.0.0.1`, rejects rating submissions from other sites, and only accepts ratings for articles actually in the feed. Reader notes are treated as data, never as instructions to the editor. To read the paper from your phone, set `host` to `0.0.0.0` and add the machine's name to `allowed_hosts` in `config.json` (e.g. `["mac-mini.local"]`).
 
+## Photos
+When an article is published, `post.sh` fetches the share image (`og:image`) of its first source page **once** and keeps it in `server/images/`. The paper never hotlinks: opening it doesn't ping the source sites, and the photo stays even if the original disappears. Articles without a usable image simply run as text. These copies are for your own private paper — don't republish them. Set `"images": false` in `config.json` to turn this off.
+
 ## Naming your paper
 The tool is meanwhiler; **the paper is yours to name** (`paper_title` in config.json). The default Japanese example is 「続報と雑談」 ("follow-ups and idle talk").
 

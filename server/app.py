@@ -5,11 +5,15 @@
 import datetime
 import json
 import os
+import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 FEED = os.path.join(BASE, "feed.jsonl")
 RATINGS = os.path.join(BASE, "ratings.jsonl")
+IMG_DIR = os.path.join(BASE, "images")  # thumb.py が掲載時に保存した写真
+IMG_NAME = re.compile(r"^/img/([0-9T-]+\.(jpg|png|gif|webp))$")
+IMG_TYPES = {"jpg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp"}
 MEMO_MAX = 200
 CONF = {}
 for p in (os.path.join(BASE, "..", "config.json"), os.path.join(BASE, "config.json")):
@@ -94,6 +98,8 @@ PAGE = """<!doctype html>
   .new { background:var(--red); color:#fff; font-size:10px; padding:2px 7px; border-radius:3px; font-weight:700; }
   h2 { font-size:19px; margin:10px 0 8px; line-height:1.5; }
   .body { font-size:15px; line-height:1.9; }
+  .photo { display:block; width:100%; max-height:340px; object-fit:cover; margin:4px 0 12px;
+           border:1px solid var(--line); filter:saturate(0.85); }
   .sources { margin-top:10px; font-size:12px; }
   .sources a { color:#8a857b; margin-right:12px; }
   .empty { text-align:center; color:#8a857b; padding:60px 0; }
@@ -139,6 +145,13 @@ function buildArticle(it, lastSeen){
   if(String(it.ts||"") > lastSeen) meta.appendChild(el("span","new","NEW"));
   art.appendChild(meta);
   art.appendChild(el("h2","", it.hook||""));
+  if(it.image){
+    const img = document.createElement("img");
+    img.className = "photo"; img.loading = "lazy"; img.alt = "";
+    img.src = "/img/" + encodeURIComponent(it.image);
+    img.onerror = ()=> img.remove();
+    art.appendChild(img);
+  }
   const body = el("div","body");
   String(it.body||"").split(String.fromCharCode(10)).forEach((p,i,arr)=>{
     body.appendChild(document.createTextNode(p));
@@ -293,6 +306,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, page, "text/html; charset=utf-8")
         if self.path == "/feed.json":
             return self._send(200, json.dumps(load_feed(), ensure_ascii=False))
+        m = IMG_NAME.match(self.path)
+        if m and os.path.isfile(os.path.join(IMG_DIR, m.group(1))):
+            with open(os.path.join(IMG_DIR, m.group(1)), "rb") as f:
+                return self._send(200, f.read(), IMG_TYPES[m.group(2)])
         return self._send(404, "{}")
 
     def do_POST(self):

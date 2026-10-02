@@ -75,6 +75,14 @@ entry = {
     "kind": kind, "hook": hook, "body": body,
     "sources": [s.strip() for s in sources.splitlines() if s.strip()],
 }
+try:  # 写真は飾り。取れなくても掲載は止めない
+    sys.path.insert(0, os.environ["FEED_DIR"])
+    import thumb
+    image = thumb.fetch(entry["sources"], entry["ts"])
+    if image:
+        entry["image"] = image
+except Exception:
+    pass
 with open(path, "a", encoding="utf-8") as f:
     f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 print("posted:", hook[:40])
