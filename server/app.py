@@ -304,8 +304,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def _origin_ok(self):
         # ブラウザは別サイトからのPOSTにOriginを付ける。付いていれば自分自身と一致すること
+        # tailnet の HTTPS（tailscale serve）越しでは https になるので両方を許す。Host は _host_ok で絞り済み
         origin = self.headers.get("Origin")
-        return origin is None or origin == "http://" + (self.headers.get("Host") or "")
+        host = self.headers.get("Host") or ""
+        return origin is None or origin in ("http://" + host, "https://" + host)
 
     def do_GET(self):
         if not self._host_ok():
